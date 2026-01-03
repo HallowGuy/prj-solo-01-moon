@@ -1,43 +1,42 @@
-version: "3.9"
-
 services:
-  db:
+  joget-db:
     image: postgres:15
-    container_name: joget-postgres
+    container_name: joget-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: joget
+      POSTGRES_USER: joget
+      POSTGRES_PASSWORD: joget
     volumes:
-      - db_data:/var/lib/postgresql/data
-    networks:
-      - joget_net
+      - joget_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U joget"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   joget:
-    image: jogetworkflow/joget-enterprise:8.0.7
-    container_name: joget-dx
+    image: jogetworkflow/joget-dx8:latest
+    container_name: joget
     depends_on:
-      - db
-    env_file:
-      - .env
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
-      SPRING_DATASOURCE_USERNAME: ${DB_USER}
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
-      TIMEZONE: ${TZ}
-      JAVA_OPTS: -Xms1024m -Xmx2048m
+      joget-db:
+        condition: service_healthy
     ports:
       - "8080:8080"
+    environment:
+      DB_TYPE: postgresql
+      DB_HOST: joget-db
+      DB_PORT: 5432
+      DB_NAME: joget
+      DB_USER: joget
+      DB_PASSWORD: joget
+      DB_CREATE: "true"
+      SETUP_WIZARD: "true"
+      TZ: Europe/Paris
     volumes:
-      - joget_data:/opt/joget/wflow
-    networks:
-      - joget_net
+      - joget_wflow:/opt/joget/wflow
+    restart: unless-stopped
 
 volumes:
-  db_data:
-  joget_data:
-
-networks:
-  joget_net:
-    driver: bridge
+  joget_pgdata:
+  joget_wflow:
