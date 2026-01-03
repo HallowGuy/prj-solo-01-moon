@@ -9,54 +9,46 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
-      # Volume de données persistant pour PostgreSQL
+      # Stockage persistant pour PostgreSQL
       - pg_data:/var/lib/postgresql/data
     networks:
-      - app_net
+      - internal
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  saltcorn:
-    image: saltcorn/saltcorn:latest
+  budibase:
+    image: budibase/budibase:2.24.8
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
-    environment:
-      DATABASE_URL: ${DATABASE_URL}
-    # Use npx to ensure the Saltcorn CLI is resolved correctly even if the binary
-    # is not installed globally in the image.
-    command: ["npx", "saltcorn", "serve", "-H", "0.0.0.0", "-p", "3000"]
-    volumes:
-      # Stockage des fichiers utilisateurs Saltcorn (plugins, fichiers uploadés)
-      - saltcorn_data:/var/lib/saltcorn
-    networks:
-      - app_net
-
-  nginx:
-    image: nginx:stable
-    restart: unless-stopped
-    depends_on:
-      saltcorn:
-        condition: service_started
     ports:
-      - "80:80"
-    volumes:
-      # Configuration Nginx personnalisée
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      # Répertoire webroot pour la validation Let's Encrypt (ACME HTTP-01)
-      - letsencrypt_challenges:/var/www/letsencrypt
+      # Expose l'UI Budibase sur un port HTTP simple
+      - "${PUBLIC_HTTP_PORT:-8080}:${BUDIBASE_PORT:-10000}"
+    environment:
+      # Réglages Budibase
+      BUDIBASE_ENVIRONMENT: production
+      BUDIBASE_PORT: ${BUDIBASE_PORT:-10000}
+      BUDIBASE_HOST: 0.0.0.0
+      # Connexion PostgreSQL utilisée par Budibase
+      BUDIBASE_DB_TYPE: postgres
+      BUDIBASE_DB_HOST: postgres
+      BUDIBASE_DB_PORT: 5432
+      BUDIBASE_DB_USER: ${POSTGRES_USER}
+      BUDIBASE_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      BUDIBASE_DB_NAME: ${POSTGRES_DB}
+      # Connexions sous forme d'URL pour compatibilité avec les versions récentes
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      INTERNAL_DB_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
     networks:
-      - app_net
+      - internal
 
 volumes:
   pg_data:
-  saltcorn_data:
-  letsencrypt_challenges:
 
 networks:
-  app_net:
+  internal:
     driver: bridge

@@ -1,50 +1,51 @@
-# Stack Saltcorn + PostgreSQL + Nginx (Docker Compose)
+# Déploiement Budibase + PostgreSQL (Docker Compose minimal)
 
-Infrastructure minimale et prête à déployer pour exécuter Saltcorn derrière Nginx avec une base PostgreSQL.
+Infrastructure minimale prête pour un VPS (Hostinger ou équivalent) afin d'exécuter Budibase avec une base PostgreSQL persistante. Les images sont tirées depuis Docker Hub (aucune construction locale) et fonctionnent avec `docker compose up -d`.
 
 ## Prérequis
-- Docker + Docker Compose Plugin (ou Docker Desktop)
-- Accès au port 80 sur la machine cible (VPS)
+- Docker et le plugin Docker Compose installés sur le VPS
+- Accès au port HTTP que vous souhaitez exposer (80 en production, 8080 en local par défaut)
 
 ## Arborescence
 ```
 .
 ├─ docker-compose.yml
-├─ nginx/
-│  └─ conf.d/
-│     └─ default.conf
 ├─ .env.example
 └─ README.md
 ```
 
-## Variables d'environnement
-Copiez `.env.example` vers `.env` puis ajustez les valeurs :
-- `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` : identifiants PostgreSQL.
-- `DATABASE_URL` : URL de connexion utilisée par Saltcorn (`postgres://USER:PASSWORD@postgres:5432/DB`).
-
-## Déploiement
-1) Préparer les variables :
+## Configuration
+1. Copier le fichier d'exemple puis ajuster les valeurs :
 ```bash
 cp .env.example .env
-# éditez .env pour changer les identifiants si besoin
+# éditez .env pour changer les mots de passe et le port exposé
 ```
+2. Variables principales dans `.env` :
+   - `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` : base, utilisateur et mot de passe PostgreSQL.
+   - `BUDIBASE_PORT` : port interne Budibase (dans le conteneur), par défaut `10000`.
+   - `PUBLIC_HTTP_PORT` : port HTTP exposé sur l'hôte (ex. `80` pour la prod ou `8080` pour un test local).
 
-2) Lancer les services :
+## Démarrage rapide
 ```bash
 docker compose up -d
 ```
-
-Déploiement direct via une URL `docker-compose.yml` (GitHub raw ou équivalent) :
-```bash
-docker compose -f https://exemple.tld/path/to/docker-compose.yml --env-file .env up -d
-```
-
-## Services
-- **postgres** : PostgreSQL 16 avec volume nommé `pg_data`.
-- **saltcorn** : image officielle `saltcorn/saltcorn`, démarrée avec `npx saltcorn serve` (permet d'éviter l'erreur `command saltcorn not found` si le binaire n'est pas installé globalement dans l'image).
-- **nginx** : reverse proxy exposant uniquement le port 80 et prêt pour Let’s Encrypt (webroot `/var/www/letsencrypt` via volume nommé `letsencrypt_challenges`).
-
-Tous les services partagent le réseau interne `app_net`. Les volumes `pg_data`, `saltcorn_data` (fichiers utilisateurs Saltcorn) et `letsencrypt_challenges` sont nommés pour la persistance.
+Les volumes sont créés automatiquement (volume nommé `pg_data` pour PostgreSQL) et le réseau Docker reste interne ; seul Budibase est exposé sur le port HTTP choisi.
 
 ## Accès
-Une fois `docker compose up -d` terminé, ouvrez `http://<ip_ou_domaine>` pour accéder à l'interface Saltcorn.
+- URL : `http://<adresse_du_vps>:<PUBLIC_HTTP_PORT>` (ex. `http://serveur:8080` par défaut).
+- Budibase utilise PostgreSQL pour son stockage interne ; aucune autre base n'est nécessaire.
+
+## Sécurité et mots de passe
+- Changez immédiatement `POSTGRES_PASSWORD` dans `.env` avant un déploiement public.
+- Pour modifier ultérieurement les identifiants, mettez à jour `.env` puis relancez :
+```bash
+docker compose down
+docker compose up -d
+```
+
+## Sauvegarde rapide de la base
+Exemple de sauvegarde au format SQL (fichier `backup.sql` généré sur l'hôte) :
+```bash
+docker compose exec postgres sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' > backup.sql
+```
+Adaptez le nom du fichier ou script de rotation selon vos besoins. Restaurations possibles avec `psql` ou `pg_restore` selon le format utilisé.
