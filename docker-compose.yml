@@ -1,8 +1,6 @@
-version: "3.8"
-
 services:
   budibase:
-    image: budibase/budibase:2.24.8
+    image: budibase/budibase:2.23.9
     container_name: budibase
     restart: unless-stopped
 
@@ -10,18 +8,17 @@ services:
       - "8080:4001"
 
     environment:
-      # Environnement
       NODE_ENV: production
       BUDIBASE_ENV: production
 
-      # URL publique (CRITIQUE pour éviter écran noir)
+      # Obligatoire pour éviter écran noir
       PUBLIC_URL: http://localhost:8080
 
-      # Secrets requis
-      JWT_SECRET: change-me-jwt-secret
-      SESSION_SECRET: change-me-session-secret
+      # Secrets
+      JWT_SECRET: change-me-jwt
+      SESSION_SECRET: change-me-session
 
-      # Création admin au premier démarrage
+      # Bootstrap admin
       ADMIN_EMAIL: admin@local.test
       ADMIN_PASSWORD: Admin123!
 
