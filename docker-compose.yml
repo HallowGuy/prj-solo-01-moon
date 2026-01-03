@@ -1,6 +1,8 @@
+version: "3.8"
+
 services:
   budibase:
-    image: budibase/budibase:2
+    image: budibase/budibase:2.24.8
     container_name: budibase
     restart: unless-stopped
 
@@ -8,26 +10,24 @@ services:
       - "8080:4001"
 
     environment:
-      # Mode standalone OFFICIEL
-      BUDIBASE_ENV: production
+      # Environnement
       NODE_ENV: production
+      BUDIBASE_ENV: production
 
-      # URL publique (important pour le frontend)
+      # URL publique (CRITIQUE pour éviter écran noir)
       PUBLIC_URL: http://localhost:8080
 
-      # Sécurité / chiffrement
-      JWT_SECRET: "change-me-super-secret"
-      SESSION_SECRET: "change-me-session-secret"
+      # Secrets requis
+      JWT_SECRET: change-me-jwt-secret
+      SESSION_SECRET: change-me-session-secret
 
-      # Admin bootstrap (créé au premier démarrage)
+      # Création admin au premier démarrage
       ADMIN_EMAIL: admin@local.test
       ADMIN_PASSWORD: Admin123!
 
-      # Logs
       LOG_LEVEL: info
 
     volumes:
-      # Données persistantes (CouchDB, apps, users, configs)
       - budibase_data:/data
 
 volumes:
