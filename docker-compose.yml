@@ -1,31 +1,43 @@
+version: "3.9"
+
 services:
-  budibase:
-    image: budibase/budibase:2.23.9
-    container_name: budibase
+  db:
+    image: postgres:15
+    container_name: joget-postgres
     restart: unless-stopped
-
-    ports:
-      - "8080:4001"
-
     environment:
-      NODE_ENV: production
-      BUDIBASE_ENV: production
-
-      # Obligatoire pour éviter écran noir
-      PUBLIC_URL: http://localhost:8080
-
-      # Secrets
-      JWT_SECRET: change-me-jwt
-      SESSION_SECRET: change-me-session
-
-      # Bootstrap admin
-      ADMIN_EMAIL: admin@local.test
-      ADMIN_PASSWORD: Admin123!
-
-      LOG_LEVEL: info
-
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
-      - budibase_data:/data
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - joget_net
+
+  joget:
+    image: jogetworkflow/joget-enterprise:8.0.7
+    container_name: joget-dx
+    depends_on:
+      - db
+    env_file:
+      - .env
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      TIMEZONE: ${TZ}
+      JAVA_OPTS: -Xms1024m -Xmx2048m
+    ports:
+      - "8080:8080"
+    volumes:
+      - joget_data:/opt/joget/wflow
+    networks:
+      - joget_net
 
 volumes:
-  budibase_data:
+  db_data:
+  joget_data:
+
+networks:
+  joget_net:
+    driver: bridge
