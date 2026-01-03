@@ -1,48 +1,34 @@
 services:
-  postgres:
-    image: postgres:16
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-    volumes:
-      - pg_data:/var/lib/postgresql/data
-    networks:
-      - internal
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   budibase:
-    image: budibase/budibase:2.23.9
+    image: budibase/budibase:2
+    container_name: budibase
     restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
+
     ports:
-      - "${PUBLIC_HTTP_PORT:-8080}:${BUDIBASE_PORT:-10000}"
+      - "8080:4001"
+
     environment:
-      BUDIBASE_ENVIRONMENT: production
-      BUDIBASE_PORT: ${BUDIBASE_PORT:-10000}
-      BUDIBASE_HOST: 0.0.0.0
+      # Mode standalone OFFICIEL
+      BUDIBASE_ENV: production
+      NODE_ENV: production
 
-      # Connexion PostgreSQL utilisée par Budibase
-      BUDIBASE_DB_TYPE: postgres
-      BUDIBASE_DB_HOST: postgres
-      BUDIBASE_DB_PORT: 5432
-      BUDIBASE_DB_USER: ${POSTGRES_USER}
-      BUDIBASE_DB_PASSWORD: ${POSTGRES_PASSWORD}
-      BUDIBASE_DB_NAME: ${POSTGRES_DB}
+      # URL publique (important pour le frontend)
+      PUBLIC_URL: http://localhost:8080
 
-    networks:
-      - internal
+      # Sécurité / chiffrement
+      JWT_SECRET: "change-me-super-secret"
+      SESSION_SECRET: "change-me-session-secret"
+
+      # Admin bootstrap (créé au premier démarrage)
+      ADMIN_EMAIL: admin@local.test
+      ADMIN_PASSWORD: Admin123!
+
+      # Logs
+      LOG_LEVEL: info
+
+    volumes:
+      # Données persistantes (CouchDB, apps, users, configs)
+      - budibase_data:/data
 
 volumes:
-  pg_data:
-
-networks:
-  internal:
-    driver: bridge
+  budibase_data:
