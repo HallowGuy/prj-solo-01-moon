@@ -41,7 +41,7 @@ docker compose -f https://exemple.tld/path/to/docker-compose.yml --env-file .env
 
 ## Services
 - **postgres** : PostgreSQL 16 avec volume nommé `pg_data`.
-- **saltcorn** : image officielle `saltcorn/saltcorn`, démarrée avec `saltcorn serve`.
+- **saltcorn** : image officielle `saltcorn/saltcorn`, démarrée avec `npx saltcorn serve` (permet d'éviter l'erreur `command saltcorn not found` si le binaire n'est pas installé globalement dans l'image).
 - **nginx** : reverse proxy exposant uniquement le port 80 et prêt pour Let’s Encrypt (webroot `/var/www/letsencrypt` via volume nommé `letsencrypt_challenges`).
 
 Tous les services partagent le réseau interne `app_net`. Les volumes `pg_data`, `saltcorn_data` (fichiers utilisateurs Saltcorn) et `letsencrypt_challenges` sont nommés pour la persistance.
