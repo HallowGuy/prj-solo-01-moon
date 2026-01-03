@@ -1,7 +1,6 @@
 services:
   joget-db:
     image: postgres:15
-    container_name: joget-db
     restart: unless-stopped
     environment:
       POSTGRES_DB: joget
@@ -16,8 +15,7 @@ services:
       retries: 5
 
   joget:
-    image: jogetworkflow/joget-dx8:latest
-    container_name: joget
+    image: jogetworkflow/joget-community:8.0.6
     depends_on:
       joget-db:
         condition: service_healthy
