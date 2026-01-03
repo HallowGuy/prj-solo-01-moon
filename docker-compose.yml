@@ -27,7 +27,9 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: ${DATABASE_URL}
-    command: ["saltcorn", "serve", "-H", "0.0.0.0", "-p", "3000"]
+    # Use npx to ensure the Saltcorn CLI is resolved correctly even if the binary
+    # is not installed globally in the image.
+    command: ["npx", "saltcorn", "serve", "-H", "0.0.0.0", "-p", "3000"]
     volumes:
       # Stockage des fichiers utilisateurs Saltcorn (plugins, fichiers uploadés)
       - saltcorn_data:/var/lib/saltcorn
